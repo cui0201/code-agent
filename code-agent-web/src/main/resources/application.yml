@@ -1,0 +1,120 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: code-agent
+  ai:
+    openai:
+      # 复用 code-agent.llm.* 的配置，避免同一份信息写两遍
+      base-url: ${code-agent.llm.base-url}
+      api-key: ${code-agent.llm.api-key}
+      chat:
+        options:
+          model: ${code-agent.llm.model}
+          temperature: ${code-agent.llm.temperature}
+          max-tokens: ${code-agent.llm.max-tokens}
+      # 本地已用 ONNX 模型做嵌入，关闭 OpenAI 侧的嵌入/图像/语音能力，减少无用 Bean
+      embedding:
+        enabled: false
+      image:
+        enabled: false
+      moderation:
+        enabled: false
+      audio:
+        speech:
+          enabled: false
+        transcription:
+          enabled: false
+
+code-agent:
+  project:
+    name: demo
+  index:
+    root: .
+    include:
+      - "**/*.java"
+      # 文档通道：Markdown 按标题切章节，与代码建立关联并做漂移检测
+      - "**/*.md"
+      # 配置通道：按配置块切，让"默认值是多少"这类问题能命中唯一可靠来源
+      - "**/*.yml"
+      - "**/*.yaml"
+      - "**/*.properties"
+      - "**/pom.xml"
+      # 生成文档：Javadoc HTML 按成员切、OpenAPI JSON 按接口切
+      - "**/javadoc/**/*.html"
+      - "**/*openapi*.json"
+    exclude:
+      - "**/target/**"
+      - "**/build/**"
+      - "**/.git/**"
+    # 索引快照：重启后直接复用切块、向量与符号图，不必重新嵌入/解析
+    snapshot-dir: .codeagent/index
+    # 服务启动时自动建索引：有快照时只要几百毫秒，没有则完整索引
+    auto-index: true
+  chunk:
+    # ast：按类/方法结构化切块（P1 起默认）；line-window：定长行窗口（P0 的基线实现）
+    strategy: ast
+    # 以下两项仅在 line-window 策略或 AST 解析失败降级时生效
+    window-lines: 60
+    overlap-lines: 10
+  retrieval:
+    # vector：仅向量召回；keyword：仅 BM25；hybrid：两者 RRF 融合（P2 起默认）
+    strategy: hybrid
+    top-k: 8
+    candidate-k: 30
+    # 拒答阈值（min-score）：低于该相似度视为无依据，直接拒答且不调用大模型。
+    # 0.62 是 P4 用 14 条评测用例重新校准的结果。注意分离度已经很窄：
+    # 拒答类最高分 0.603，必须通过的证据类最低分 0.626，只差 0.023——
+    # 中文问句对中文文档的余弦基线本来就有 0.6 左右，绝对阈值法接近失效。
+    # 详见 code-agent-eval/target/rag-report.md 与设计文档 14.3 节。
+    min-score: 0.62
+    # 关键词路的放行阈值（BM25 分数）：命中 Maven、pom.xml 这类稀有词同样算强证据
+    min-keyword-score: 1.0
+    max-evidence-chars: 12000
+  llm:
+    # 任意 OpenAI 兼容端点：DeepSeek / 通义千问 / 智谱 / Kimi / OpenAI
+    base-url: ${LLM_BASE_URL:https://api.deepseek.com}
+    # 密钥只允许来自环境变量，禁止写入本文件
+    api-key: ${LLM_API_KEY:not-configured}
+    model: ${LLM_MODEL:deepseek-chat}
+    temperature: 0.0
+    max-tokens: 1200
+    timeout-seconds: 60
+  embedding:
+    # 本地嵌入模型（JVM 内 ONNX 推理，输出 512 维向量，无需外部服务）
+    # bge-small-zh-v15-q：中文问答效果好的量化版，模型文件打包在依赖 jar 内
+    model: bge-small-zh-v15-q
+  store:
+    # 向量存储类型：memory（进程内存储，默认值，零依赖）
+    #              qdrant（持久化 + HNSW 近似检索，需要先启动 Qdrant 服务）
+    type: memory
+    qdrant-url: http://localhost:6333
+    collection: code-agent
+  rerank:
+    # 实测结论（2026-09-23）：不默认启用。
+    # 在 10 条评测用例上，重排让 MRR 从 0.9167 降到 0.8750（正确证据排第一的用例从 7 条减到 6 条），
+    # 而延迟增加 4145 ms/查询（候选 30 条，CPU），是 P95 预算的 1.6 倍。
+    # 质量没提升、延迟超预算，两条中任意一条都足以让它默认关闭。
+    # 可选值：false（默认）/ auto（模型存在则启用）/ true（强制启用，模型缺失时报错）
+    enabled: false
+    # 模型需单独下载：scripts/download-reranker-model.sh
+    model-path: ${RERANK_MODEL:${user.home}/.codeagent/models/bge-reranker-base/model_quantized.onnx}
+    tokenizer-path: ${RERANK_TOKENIZER:${user.home}/.codeagent/models/bge-reranker-base/tokenizer.json}
+    candidate-k: 30
+  guard:
+    require-citation: true
+    citation-retry: 1
+    # LLM 相关性判官：判断"证据能否回答问题"，替代失效的相似度阈值。
+    # 每次问答只多一次极小的模型调用（输出 YES/NO），失败时放行而不是阻断
+    relevance-judge: true
+  cache:
+    # 语义缓存：重复提问直接返回，省掉检索与大模型调用
+    enabled: true
+    semantic-threshold: 0.95
+    max-entries: 1000
+
+logging:
+  level:
+    root: INFO
+    com.example.codeagent: INFO

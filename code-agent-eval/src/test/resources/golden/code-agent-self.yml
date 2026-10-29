@@ -1,0 +1,542 @@
+name: code-agent-self
+description: >
+  针对 code-agent 项目自身的评测集。
+  它比样例工程更接近真实场景：语料里有源码、设计文档、学习路线与 README，
+  问题也覆盖了检索原理、设计决策、拒答边界等不同类别。
+cases:
+  # ---------- 检索原理：答案在源码里 ----------
+  - id: s001
+    category: 实现解释
+    question: 余弦相似度是怎么算的？归一化之后点积能代替它吗？
+    expected_evidence:
+      - path: code-agent-core/src/main/java/com/example/codeagent/core/math/VectorMath.java
+    note: 手写的向量数学工具，注释里解释了归一化与点积的关系
+
+  - id: s002
+    category: 实现解释
+    question: BM25 的打分公式里 k1 和 b 分别控制什么？
+    expected_evidence:
+      - path: code-agent-retrieval/src/main/java/com/example/codeagent/retrieval/keyword/Bm25Index.java
+
+  - id: s003
+    category: 实现解释
+    question: RRF 融合为什么只用排名不用分数？
+    expected_evidence:
+      - path: code-agent-retrieval/src/main/java/com/example/codeagent/retrieval/fusion/RrfFuser.java
+
+  - id: s004
+    category: 实现解释
+    question: 分词时为什么要同时保留标识符的整体形式和拆分形式？
+    expected_evidence:
+      - path: code-agent-retrieval/src/main/java/com/example/codeagent/retrieval/keyword/Tokenizer.java
+
+  - id: s005
+    category: 实现解释
+    question: 符号键归一化是为了解决什么问题？
+    expected_evidence:
+      - path: code-agent-indexer/src/main/java/com/example/codeagent/indexer/graph/SymbolKeys.java
+
+  - id: s006
+    category: 实现解释
+    question: 类块和源码块有什么区别？为什么类块要用合成摘要？
+    expected_evidence:
+      - path: code-agent-indexer/src/main/java/com/example/codeagent/indexer/chunk/JavaAstChunker.java
+
+  - id: s007
+    category: 实现解释
+    question: 引用校验是怎么做的？为什么不能只靠提示词约束模型？
+    expected_evidence:
+      - path: code-agent-agent/src/main/java/com/example/codeagent/agent/CitationValidator.java
+
+  - id: s008
+    category: 实现解释
+    question: 文档漂移检测有哪两条判据？
+    expected_evidence:
+      - path: code-agent-indexer/src/main/java/com/example/codeagent/indexer/doc/DocumentDriftDetector.java
+      - path: docs/design/dev-design.md
+        anchor: 2.4-文档通道与漂移检测
+
+  - id: s009
+    category: 实现解释
+    question: 语义缓存分成哪两层？各自的命中条件和成本是什么？
+    expected_evidence:
+      - path: code-agent-agent/src/main/java/com/example/codeagent/agent/SemanticCache.java
+
+  - id: s010
+    category: 实现解释
+    question: 增量索引为什么以文件而不是代码块作为复用单位？
+    expected_evidence:
+      - path: code-agent-indexer/src/main/java/com/example/codeagent/indexer/IncrementalIndexCache.java
+
+  # ---------- 事实查询：具体常量、配置、类名 ----------
+  - id: s011
+    category: 事实查询
+    question: 默认的拒答阈值是多少？
+    expected_evidence:
+      - path: code-agent-web/src/main/resources/application.yml
+      - path: docs/design/dev-design.md
+
+  - id: s012
+    category: 事实查询
+    question: 默认的嵌入模型是什么？
+    expected_evidence:
+      - path: code-agent-web/src/main/resources/application.yml
+      - path: code-agent-web/src/main/java/com/example/codeagent/web/config/AgentProperties.java
+      - path: code-agent-indexer/src/main/java/com/example/codeagent/indexer/embed/LocalOnnxEmbeddingClient.java
+
+  - id: s013
+    category: 事实查询
+    question: 新增一种文件类型的切块应该改哪个类？
+    expected_evidence:
+      - path: code-agent-indexer/src/main/java/com/example/codeagent/indexer/chunk/CompositeChunker.java
+
+  - id: s014
+    category: 事实查询
+    question: 影响面分析的接口路径是什么？支持哪些参数？
+    expected_evidence:
+      - path: docs/design/dev-design.md
+      - path: README.md
+      - path: code-agent-web/src/main/java/com/example/codeagent/web/rest/AskController.java
+
+  - id: s015
+    category: 事实查询
+    question: 项目里一共设计了哪几个 Maven 模块？
+    expected_evidence:
+      - path: pom.xml
+      - path: README.md
+
+  - id: s016
+    category: 事实查询
+    question: 重排功能默认是开启还是关闭的？
+    expected_evidence:
+      - path: code-agent-web/src/main/resources/application.yml
+      - path: docs/design/dev-design.md
+
+  # ---------- 设计决策：答案在设计文档里 ----------
+  - id: s017
+    category: 设计决策
+    question: 为什么没有用 Python 而选择全 Java 技术栈？
+    expected_evidence:
+      - path: docs/code-agent-plan.md
+      - path: docs/code-agent-plan.md
+        anchor: 2-技术栈定稿
+      - path: README.md
+
+  - id: s018
+    category: 设计决策
+    question: 为什么重排最终没有默认启用？
+    expected_evidence:
+      - path: docs/design/dev-design.md
+        anchor: 147-p3-实测结果重排在本场景下没有收益否定结论
+      - path: README.md
+
+  - id: s019
+    category: 设计决策
+    question: 拒答阈值为什么说已经接近失效？
+    expected_evidence:
+      - path: docs/design/dev-design.md
+      - path: README.md
+
+  - id: s020
+    category: 设计决策
+    question: 为什么选择 AST 切块而不是定长窗口切块？
+    expected_evidence:
+      - path: docs/design/dev-design.md
+        anchor: 14.4-p1-实测结果ast-切块-vs-定长窗口切块
+      - path: docs/learning-roadmap.md
+
+  - id: s021
+    category: 设计决策
+    question: 为什么用 Spoon 而不是 JavaParser 来做调用关系分析？
+    expected_evidence:
+      - path: code-agent-indexer/src/main/java/com/example/codeagent/indexer/graph/SpoonGraphBuilder.java
+      - path: docs/learning-roadmap.md
+
+  # ---------- 学习路径：答案在学习路线里 ----------
+  - id: s022
+    category: 学习路径
+    question: 想补检索基础，应该按什么顺序学哪些内容？
+    expected_evidence:
+      - path: docs/learning-roadmap.md
+        anchor: 阶段一检索基础对应-p0p2
+
+  - id: s023
+    category: 学习路径
+    question: 有哪些动手实验可以做？
+    expected_evidence:
+      - path: docs/learning-roadmap.md
+        anchor: 7-动手实验清单从易到难
+
+  - id: s024
+    category: 学习路径
+    question: 面试会问哪些关于检索原理的问题？
+    expected_evidence:
+      - path: docs/learning-roadmap.md
+        anchor: 8-面试问答
+
+  # ---------- 跨文件：需要综合多处信息 ----------
+  - id: s025
+    category: 跨文件综合
+    question: 一次问答从问题到答案，中间经过哪些步骤？
+    expected_evidence:
+      - path: code-agent-agent/src/main/java/com/example/codeagent/agent/QaService.java
+      - path: docs/design/dev-design.md
+        anchor: 82-问答流程p0
+
+  - id: s026
+    category: 跨文件综合
+    question: 索引一次代码库需要构建哪几套索引？
+    expected_evidence:
+      - path: code-agent-indexer/src/main/java/com/example/codeagent/indexer/IndexingService.java
+      - path: code-agent-web/src/main/java/com/example/codeagent/web/service/IndexingFacade.java
+
+  - id: s027
+    category: 跨文件综合
+    question: 项目中哪些地方是刻意手写实现而没有用框架的？
+    expected_evidence:
+      - path: README.md
+      - path: docs/design/dev-design.md
+
+  # ---------- 拒答：语料里确实没有对应依据 ----------
+  - id: s028
+    category: 拒答
+    question: 项目的单元测试覆盖率是多少？
+    expect_refusal: true
+    note: 项目里没有覆盖率报告，任何具体数字都是编造
+
+  - id: s029
+    category: 拒答
+    question: 这个项目在生产环境的 QPS 峰值是多少？
+    expect_refusal: true
+    note: 项目只做过单机评测，没有线上压测数据
+
+  - id: s030
+    category: 拒答
+    question: 项目使用了哪个版本的 Kubernetes 进行部署？
+    expect_refusal: true
+    note: 项目没有 K8s 部署配置
+
+  # ---------- 第二轮扩充：重点补已知薄弱类别 ----------
+
+  - id: s031
+    category: 拒答
+    question: 这个项目的日活用户有多少？
+    expect_refusal: true
+    note: 没有任何运营数据
+
+  - id: s032
+    category: 拒答
+    question: 团队里有几个后端工程师？
+    expect_refusal: true
+    note: 个人项目，没有团队信息
+
+  - id: s033
+    category: 拒答
+    question: 上一次线上事故的根本原因是什么？
+    expect_refusal: true
+    note: 没有线上运行记录
+
+  - id: s034
+    category: 拒答
+    question: 项目 License 是什么？
+    expect_refusal: true
+    note: 目前还没有 LICENSE 文件
+
+  - id: s035
+    category: 跨文件综合
+    question: 一次改动从进入索引到能被检索到，要经过哪些组件？
+    expected_evidence:
+      - path: code-agent-indexer/src/main/java/com/example/codeagent/indexer/IndexingService.java
+      - path: code-agent-web/src/main/java/com/example/codeagent/web/service/IndexingFacade.java
+      - path: docs/design/dev-design.md
+    note: 扫描、切块、建图、漂移、向量化、写库
+
+  - id: s036
+    category: 跨文件综合
+    question: 引用校验失败之后会发生什么？
+    expected_evidence:
+      - path: code-agent-agent/src/main/java/com/example/codeagent/agent/QaService.java
+      - path: code-agent-agent/src/main/java/com/example/codeagent/agent/CitationValidator.java
+
+  - id: s037
+    category: 跨文件综合
+    question: 用户提问后多久能看到第一个字？受哪些因素影响？
+    expected_evidence:
+      - path: docs/design/dev-design.md
+      - path: README.md
+      - path: code-agent-web/src/main/java/com/example/codeagent/web/rest/AskController.java
+    note: 流式 SSE 与延迟预算
+
+  - id: s038
+    category: 跨文件综合
+    question: 换了代码之后，哪些地方需要失效重算？
+    expected_evidence:
+      - path: code-agent-indexer/src/main/java/com/example/codeagent/indexer/IncrementalIndexCache.java
+      - path: code-agent-web/src/main/java/com/example/codeagent/web/service/IndexingFacade.java
+      - path: docs/design/dev-design.md
+
+  - id: s039
+    category: 事实查询
+    question: 语义缓存的容量默认是多少？
+    expected_evidence:
+      - path: code-agent-web/src/main/resources/application.yml
+      - path: code-agent-web/src/main/java/com/example/codeagent/web/config/AgentProperties.java
+
+  - id: s040
+    category: 事实查询
+    question: 默认的向量库是哪一个？
+    expected_evidence:
+      - path: code-agent-web/src/main/resources/application.yml
+      - path: code-agent-web/src/main/java/com/example/codeagent/web/config/AgentProperties.java
+
+  - id: s041
+    category: 事实查询
+    question: 项目对外提供了哪几个 HTTP 接口？
+    expected_evidence:
+      - path: code-agent-web/src/main/java/com/example/codeagent/web/rest/AskController.java
+      - path: README.md
+
+  - id: s042
+    category: 事实查询
+    question: MCP Server 暴露了哪几个工具？
+    expected_evidence:
+      - path: code-agent-web/src/main/java/com/example/codeagent/web/mcp/CodeAgentMcpTools.java
+      - path: README.md
+
+  - id: s043
+    category: 设计决策
+    question: 为什么增量索引以文件为复用单位？
+    expected_evidence:
+      - path: code-agent-indexer/src/main/java/com/example/codeagent/indexer/IncrementalIndexCache.java
+      - path: docs/design/dev-design.md
+
+  - id: s044
+    category: 设计决策
+    question: 为什么拒答不能只靠相似度阈值？
+    expected_evidence:
+      - path: code-agent-core/src/main/java/com/example/codeagent/core/port/RelevanceJudge.java
+      - path: code-agent-agent/src/main/java/com/example/codeagent/agent/LlmRelevanceJudge.java
+      - path: docs/design/dev-design.md
+
+  - id: s045
+    category: 文档查询
+    question: 项目当前的测试数量是多少？都跑些什么？
+    expected_evidence:
+      - path: README.md
+      - path: docs/design/dev-design.md
+
+  - id: s046
+    category: 文档查询
+    question: 怎么用 MCP 的方式接入这个项目？
+    expected_evidence:
+      - path: README.md
+      - path: docs/design/dev-design.md
+      - path: docs/upstream-contribution.md
+
+  # ---------- 第三轮扩充：配置、接口、边界与更多拒答 ----------
+
+  - id: s047
+    category: 事实查询
+    question: 语义缓存默认是开启的吗？
+    expected_evidence:
+      - path: code-agent-web/src/main/resources/application.yml
+      - path: code-agent-web/src/main/java/com/example/codeagent/web/config/AgentProperties.java
+
+  - id: s048
+    category: 事实查询
+    question: 引用校验失败后默认重试几次？
+    expected_evidence:
+      - path: code-agent-web/src/main/resources/application.yml
+      - path: code-agent-web/src/main/java/com/example/codeagent/web/config/AgentProperties.java
+
+  - id: s049
+    category: 事实查询
+    question: 检索策略默认用哪一种？
+    expected_evidence:
+      - path: code-agent-web/src/main/resources/application.yml
+      - path: code-agent-web/src/main/java/com/example/codeagent/web/config/AgentProperties.java
+
+  - id: s050
+    category: 事实查询
+    question: 每路召回的候选数量默认是多少？
+    expected_evidence:
+      - path: code-agent-web/src/main/resources/application.yml
+      - path: code-agent-web/src/main/java/com/example/codeagent/web/config/AgentProperties.java
+
+  - id: s051
+    category: 事实查询
+    question: 索引时默认排除哪些目录？
+    expected_evidence:
+      - path: code-agent-web/src/main/resources/application.yml
+      - path: code-agent-web/src/main/java/com/example/codeagent/web/config/AgentProperties.java
+
+  - id: s052
+    category: 事实查询
+    question: 流式接口会按什么顺序发出事件？
+    expected_evidence:
+      - path: code-agent-web/src/main/java/com/example/codeagent/web/rest/AskController.java
+      - path: README.md
+
+  - id: s053
+    category: 事实查询
+    question: 运行指标接口暴露了哪些数据？
+    expected_evidence:
+      - path: code-agent-web/src/main/java/com/example/codeagent/web/service/AgentMetrics.java
+      - path: README.md
+
+  - id: s054
+    category: 实现解释
+    question: 缓存为什么在索引重建时要整体失效？
+    expected_evidence:
+      - path: code-agent-agent/src/main/java/com/example/codeagent/agent/SemanticCache.java
+      - path: docs/design/dev-design.md
+
+  - id: s055
+    category: 实现解释
+    question: 增量索引如何避免把向量配到错误的切块上？
+    expected_evidence:
+      - path: code-agent-indexer/src/main/java/com/example/codeagent/indexer/IncrementalIndexCache.java
+      - path: code-agent-indexer/src/main/java/com/example/codeagent/indexer/IndexingService.java
+
+  - id: s056
+    category: 实现解释
+    question: 相关性判官调用失败时系统会怎么做？
+    expected_evidence:
+      - path: code-agent-agent/src/main/java/com/example/codeagent/agent/LlmRelevanceJudge.java
+      - path: docs/design/dev-design.md
+
+  - id: s057
+    category: 实现解释
+    question: 引用白名单校验具体检查什么？
+    expected_evidence:
+      - path: code-agent-agent/src/main/java/com/example/codeagent/agent/CitationValidator.java
+
+  - id: s058
+    category: 实现解释
+    question: 符号键归一化要处理哪几种写法差异？
+    expected_evidence:
+      - path: code-agent-indexer/src/main/java/com/example/codeagent/indexer/graph/SymbolKeys.java
+
+  - id: s059
+    category: 实现解释
+    question: 符号图为什么用 noClasspath 模式？
+    expected_evidence:
+      - path: code-agent-indexer/src/main/java/com/example/codeagent/indexer/graph/SpoonGraphBuilder.java
+      - path: docs/design/dev-design.md
+
+  - id: s060
+    category: 跨文件综合
+    question: 改了一个 Java 文件之后，哪些索引需要更新？
+    expected_evidence:
+      - path: code-agent-indexer/src/main/java/com/example/codeagent/indexer/IndexingService.java
+      - path: code-agent-web/src/main/java/com/example/codeagent/web/service/IndexingFacade.java
+      - path: docs/design/dev-design.md
+
+  - id: s061
+    category: 跨文件综合
+    question: 引用里的定位信息是怎么一路传递到答案里的？
+    expected_evidence:
+      - path: code-agent-agent/src/main/java/com/example/codeagent/agent/PromptBuilder.java
+      - path: code-agent-agent/src/main/java/com/example/codeagent/agent/CitationValidator.java
+      - path: code-agent-core/src/main/java/com/example/codeagent/core/model/Citation.java
+
+  - id: s062
+    category: 跨文件综合
+    question: 新增一种可以索引的文件类型需要改哪些地方？
+    expected_evidence:
+      - path: code-agent-indexer/src/main/java/com/example/codeagent/indexer/chunk/CompositeChunker.java
+      - path: code-agent-web/src/main/resources/application.yml
+      - path: README.md
+
+  - id: s063
+    category: 跨文件综合
+    question: 文档被标记过期之后，会怎么影响检索和回答？
+    expected_evidence:
+      - path: code-agent-indexer/src/main/java/com/example/codeagent/indexer/doc/DocumentDriftDetector.java
+      - path: code-agent-retrieval/src/main/java/com/example/codeagent/retrieval/HybridRetriever.java
+      - path: code-agent-agent/src/main/java/com/example/codeagent/agent/PromptBuilder.java
+
+  - id: s064
+    category: 文档查询
+    question: 想系统学习这个项目涉及的知识该从哪里开始？
+    expected_evidence:
+      - path: docs/learning-roadmap.md
+
+  - id: s065
+    category: 文档查询
+    question: 把 AST 切块器贡献给上游需要先做什么？
+    expected_evidence:
+      - path: docs/upstream-contribution.md
+
+  - id: s066
+    category: 文档查询
+    question: 项目当前还有哪些已知限制？
+    expected_evidence:
+      - path: README.md
+      - path: docs/design/dev-design.md
+
+  - id: s067
+    category: 拒答
+    question: 项目在 GitHub 上有多少 star？
+    expect_refusal: true
+    note: 项目还没开源发布
+
+  - id: s068
+    category: 拒答
+    question: 谁是这个项目的赞助商？
+    expect_refusal: true
+    note: 没有任何赞助信息
+
+  - id: s069
+    category: 拒答
+    question: 下个版本计划支持哪些新语言？
+    expect_refusal: true
+    note: 没有版本规划文档，路线图只写到当前阶段
+
+  - id: s070
+    category: 拒答
+    question: 项目支持的并发用户数是多少？
+    expect_refusal: true
+    note: 从未做过并发压测
+
+  - id: s071
+    category: 拒答
+    question: 作者毕业于哪所大学？
+    expect_refusal: true
+    note: 与项目无关的个人信息
+
+  - id: s072
+    category: 事实查询
+    question: 项目要求使用哪个 Java 版本？
+    expected_evidence:
+      - path: pom.xml
+      - path: README.md
+      - path: docs/design/dev-design.md
+
+  - id: s073
+    category: 事实查询
+    question: 项目一共有几个 Maven 子模块？
+    expected_evidence:
+      - path: pom.xml
+      - path: README.md
+
+  - id: s074
+    category: 事实查询
+    question: 定长窗口切块默认多少行？
+    expected_evidence:
+      - path: code-agent-web/src/main/resources/application.yml
+      - path: code-agent-web/src/main/java/com/example/codeagent/web/config/AgentProperties.java
+
+  - id: s075
+    category: 事实查询
+    question: 默认使用哪个大模型？
+    expected_evidence:
+      - path: code-agent-web/src/main/resources/application.yml
+      - path: code-agent-web/src/main/java/com/example/codeagent/web/config/AgentProperties.java
+
+  - id: s076
+    category: 设计决策
+    question: 为什么把配置文件和源码分不同的切块方式？
+    expected_evidence:
+      - path: code-agent-indexer/src/main/java/com/example/codeagent/indexer/chunk/ConfigFileChunker.java
+      - path: docs/design/dev-design.md

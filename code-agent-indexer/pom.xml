@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.example.codeagent</groupId>
+        <artifactId>code-agent</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>code-agent-indexer</artifactId>
+    <name>code-agent-indexer</name>
+    <description>源码扫描、切块与本地嵌入</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.example.codeagent</groupId>
+            <artifactId>code-agent-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!-- JVM 内 ONNX 嵌入模型：模型文件打包在 jar 中，运行时无需下载 -->
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-embeddings-bge-small-zh-v15-q</artifactId>
+        </dependency>
+
+        <!-- AST 切块：只需要语法树，不需要类型求解（符号解析留给 P5） -->
+        <dependency>
+            <groupId>com.github.javaparser</groupId>
+            <artifactId>javaparser-core</artifactId>
+            <version>${javaparser.version}</version>
+        </dependency>
+
+        <!--
+          符号图：
+          Spoon 负责真正的类型解析（JavaParser 只做语法，答不出"这个调用指向哪个方法"）；
+          JGraphT 负责图的存储与遍历（反向可达、深度控制不用自己写）。
+        -->
+        <dependency>
+            <groupId>fr.inria.gforge.spoon</groupId>
+            <artifactId>spoon-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jgrapht</groupId>
+            <artifactId>jgrapht-core</artifactId>
+        </dependency>
+
+        <!-- Javadoc HTML 解析：jsoup 专门做容错 HTML 解析，比正则可靠得多 -->
+        <dependency>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+            <version>${jsoup.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

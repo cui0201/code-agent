@@ -1,0 +1,30 @@
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+### IDE ###
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.classpath
+.project
+.settings/
+
+### 构建产物 ###
+build/
+*.log
+
+### 密钥与本地配置（绝不提交）###
+.env
+*.local.yml
+application-local.yml
+*.pem
+
+### 索引快照（可重建，且含代码片段）###
+.codeagent/
+
+### 操作系统 ###
+.DS_Store

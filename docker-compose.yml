@@ -1,0 +1,50 @@
+# code-agent 一键启动：应用 + 向量库。
+#
+# 用法：
+#   export LLM_API_KEY=sk-xxx
+#   docker compose up -d --build
+#   docker compose exec code-agent java -jar /app/code-agent.jar --help  # 可选
+#
+# 首次启动会建索引，需要几十秒；之后重启会直接加载快照（.codeagent 卷）。
+services:
+  code-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: code-agent:local
+    ports:
+      - "8080:8080"
+    environment:
+      # 唯一的外呼凭据。绝不写进镜像或仓库
+      LLM_API_KEY: ${LLM_API_KEY:?请先设置 LLM_API_KEY 环境变量}
+      LLM_BASE_URL: ${LLM_BASE_URL:-https://api.deepseek.com}
+      LLM_MODEL: ${LLM_MODEL:-deepseek-flash}
+    command:
+      - "--code-agent.index.root=/workspace"
+      - "--code-agent.store.type=qdrant"
+      - "--code-agent.store.qdrant-url=http://qdrant:6333"
+    volumes:
+      # 被索引的工程（只读挂载，code-agent 绝不修改源码）
+      - ${JAVA_PROJECT:-.}:/workspace:ro
+      # 索引快照：重启后免于重建
+      - code-agent-index:/app/.codeagent
+    depends_on:
+      qdrant:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/v1/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant-data:/qdrant/storage
+
+volumes:
+  qdrant-data:
+  code-agent-index:

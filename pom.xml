@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.5.3</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>com.example.codeagent</groupId>
+    <artifactId>code-agent</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <name>code-agent</name>
+    <description>Java 项目智能体：对源码与生成文档做结构化索引，提供严格引用式的项目问答</description>
+
+    <modules>
+        <module>code-agent-core</module>
+        <module>code-agent-indexer</module>
+        <module>code-agent-retrieval</module>
+        <module>code-agent-agent</module>
+        <module>code-agent-web</module>
+        <module>code-agent-eval</module>
+    </modules>
+
+    <properties>
+        <java.version>21</java.version>
+        <maven.compiler.release>21</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+        <spring-ai.version>1.1.8</spring-ai.version>
+        <javaparser.version>3.28.2</javaparser.version>
+        <spoon.version>11.5.0</spoon.version>
+        <jgrapht.version>1.5.3</jgrapht.version>
+        <mcp-sdk.version>0.18.3</mcp-sdk.version>
+        <jsoup.version>1.17.2</jsoup.version>
+        <langchain4j.version>1.20.0</langchain4j.version>
+        <!-- 嵌入/重排模块与主版本不同步，带 -betaNN 后缀 -->
+        <langchain4j.embeddings.version>1.20.0-beta30</langchain4j.embeddings.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-bom</artifactId>
+                <version>${spring-ai.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>dev.langchain4j</groupId>
+                <artifactId>langchain4j-bom</artifactId>
+                <version>${langchain4j.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!-- 本地 ONNX 嵌入模型：模型文件已打包在 jar 内（约 24 MB），运行时无需下载 -->
+            <dependency>
+                <groupId>dev.langchain4j</groupId>
+                <artifactId>langchain4j-embeddings-bge-small-zh-v15-q</artifactId>
+                <version>${langchain4j.embeddings.version}</version>
+            </dependency>
+            <!-- 交叉编码器重排（模型文件需单独下载，见 scripts/download-reranker-model.sh） -->
+            <dependency>
+                <groupId>dev.langchain4j</groupId>
+                <artifactId>langchain4j-onnx-scoring</artifactId>
+                <version>${langchain4j.embeddings.version}</version>
+            </dependency>
+            <!-- 符号图：Spoon 做类型解析与调用关系，JGraphT 做图存储与遍历 -->
+            <dependency>
+                <groupId>fr.inria.gforge.spoon</groupId>
+                <artifactId>spoon-core</artifactId>
+                <version>${spoon.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jgrapht</groupId>
+                <artifactId>jgrapht-core</artifactId>
+                <version>${jgrapht.version}</version>
+            </dependency>
+            <!--
+              MCP Java SDK：把本项目的检索与影响面分析暴露成 MCP 工具，
+              让 IDE / 编码助手等客户端可以直接复用同一套能力。
+              这两个坐标本来就作为 Spring AI 的传递依赖存在于本地仓库，
+              显式声明只是把它们提升为直接依赖，不引入新的下载。
+            -->
+            <dependency>
+                <groupId>io.modelcontextprotocol.sdk</groupId>
+                <artifactId>mcp-core</artifactId>
+                <version>${mcp-sdk.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.modelcontextprotocol.sdk</groupId>
+                <artifactId>mcp-json-jackson2</artifactId>
+                <version>${mcp-sdk.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <plugins>
+            <!-- 集成测试（*IT）在 verify 阶段执行，单元测试（*Test）仍由 surefire 负责 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-maven-plugin</artifactId>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+</project>

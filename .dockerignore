@@ -1,0 +1,7 @@
+**/target
+.git
+.codeagent
+.idea
+.vscode
+*.log
+docs/archive

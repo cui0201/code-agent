@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      # 单元测试 + 集成测试 + 两个语料的评测
+      # Qdrant 相关的集成测试在没有 Qdrant 时会自动跳过（Assumptions）
+      - name: Build and verify
+        run: mvn -B verify
+
+      - name: Upload evaluation reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rag-reports
+          path: |
+            code-agent-eval/target/rag-report.md
+            code-agent-eval/target/self-rag-report.md
+          if-no-files-found: warn

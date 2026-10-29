@@ -1,0 +1,93 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "订单服务 API",
+    "version": "1.0.0",
+    "description": "由 springdoc 生成的接口契约，请勿手工修改。"
+  },
+  "paths": {
+    "/api/orders": {
+      "post": {
+        "operationId": "createOrder",
+        "summary": "创建订单",
+        "description": "校验下单参数、按 requestId 做幂等判断、落库并发布订单创建事件。",
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": true,
+            "description": "客户端生成的幂等键"
+          }
+        ],
+        "requestBody": {
+          "description": "下单请求体",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "userId": {"type": "integer", "description": "下单用户 ID"},
+                  "skuId": {"type": "integer", "description": "商品 ID"},
+                  "amount": {"type": "number", "description": "订单金额，单位元，最多两位小数"},
+                  "requestId": {"type": "string", "description": "幂等键"},
+                  "couponCode": {"type": "string", "description": "优惠券码，可为空"}
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "创建成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "orderNo": {"type": "string", "description": "订单号"},
+                    "status": {"type": "string", "description": "订单状态"},
+                    "createdAt": {"type": "string", "description": "创建时间"}
+                  }
+                }
+              }
+            }
+          },
+          "400": {"description": "参数校验失败"},
+          "429": {"description": "触发风控限制"}
+        }
+      }
+    },
+    "/api/orders/{orderNo}": {
+      "get": {
+        "operationId": "getOrder",
+        "summary": "查询订单",
+        "description": "按订单号查询订单详情，订单不存在时返回 400。",
+        "parameters": [
+          {
+            "name": "orderNo",
+            "in": "path",
+            "required": true,
+            "description": "订单号"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "查询成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "orderNo": {"type": "string", "description": "订单号"},
+                    "status": {"type": "string", "description": "订单状态"},
+                    "amount": {"type": "number", "description": "订单金额"}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

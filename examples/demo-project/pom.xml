@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  样例工程自身的构建文件。
+
+  它存在的意义是让"文档生成"这一步可以真的跑起来：
+      mvn -f examples/demo-project/pom.xml javadoc:javadoc
+  产出 target/site/apidocs 下的 HTML 文档。
+
+  注意：这个工程不是 code-agent 的模块，它的源码只是被索引的数据。
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.acme</groupId>
+    <artifactId>demo-order</artifactId>
+    <version>1.0.0</version>
+    <packaging>jar</packaging>
+    <name>demo-order</name>
+
+    <properties>
+        <maven.compiler.release>21</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.10.1</version>
+                <configuration>
+                    <encoding>UTF-8</encoding>
+                    <charset>UTF-8</charset>
+                    <docencoding>UTF-8</docencoding>
+                    <doclint>none</doclint>
+                    <!-- 生成到 docs/generated 而不是 target：target 被索引排除，
+                         而这份产物是 code-agent 文档通道的输入 -->
+                    <reportOutputDirectory>${project.basedir}/docs/generated/javadoc</reportOutputDirectory>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

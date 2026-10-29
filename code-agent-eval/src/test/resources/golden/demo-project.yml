@@ -1,0 +1,228 @@
+name: demo-project
+description: 基于 examples/demo-project 的检索评测集
+cases:
+  - id: q001
+    category: 实现解释
+    question: 下单接口对订单金额做了哪些校验？
+    expected_evidence:
+      - path: src/main/java/com/acme/order/OrderService.java
+        start_line: 101
+        end_line: 121
+    note: 金额规则集中在 validateAmount 方法
+
+  - id: q002
+    category: 实现解释
+    question: createOrder 是如何保证幂等的？
+    expected_evidence:
+      - path: src/main/java/com/acme/order/OrderService.java
+        start_line: 37
+        end_line: 78
+      # Javadoc 是从源码生成的，说明同一件事，同样算有效依据
+      - path: docs/generated/javadoc/com/acme/order/OrderService.html
+      - path: docs/adr/0001-order-idempotency.md
+    note: 通过 requestId 查询已存在的订单
+
+  - id: q003
+    category: 事实查询
+    question: 单笔订单的金额上限是多少？
+    expected_evidence:
+      - path: src/main/java/com/acme/order/OrderService.java
+        start_line: 101
+        end_line: 121
+
+  - id: q004
+    category: 事实查询
+    question: 订单创建成功后会发布什么事件？
+    expected_evidence:
+      - path: src/main/java/com/acme/order/OrderService.java
+      - path: src/main/java/com/acme/order/OrderEventPublisher.java
+        start_line: 10
+        end_line: 11
+
+  - id: q005
+    category: 事实查询
+    question: OrderController 对外暴露了哪些接口？
+    expected_evidence:
+      - path: src/main/java/com/acme/order/OrderController.java
+
+  - id: q006
+    category: 事实查询
+    question: 下单请求包含哪些参数？
+    expected_evidence:
+      - path: src/main/java/com/acme/order/OrderRequest.java
+
+  - id: q007
+    category: 事实查询
+    question: 订单有哪几种状态？
+    expected_evidence:
+      - path: src/main/java/com/acme/order/Order.java
+        start_line: 25
+        end_line: 36
+
+  - id: q008
+    category: 实现解释
+    question: 风控是如何判断用户能否下单的？
+    expected_evidence:
+      - path: src/main/java/com/acme/order/OrderService.java
+      - path: src/main/java/com/acme/order/RiskClient.java
+        start_line: 6
+        end_line: 13
+
+  - id: q009
+    category: 拒答
+    question: 这个项目使用的 Spring Boot 版本是多少？
+    expect_refusal: true
+    note: 样例工程没有构建文件，应当拒答而不是编造
+
+  - id: q010
+    category: 拒答
+    question: 项目里使用的是哪个消息队列？
+    expect_refusal: true
+    note: 样例工程只定义了接口，没有任何消息队列依赖
+
+  # ---------- 文档通道（P4）：期望命中文档章节，且必须定位到具体锚点 ----------
+
+  - id: q011
+    category: 文档查询
+    question: 创建订单接口的请求字段有哪些？
+    expected_evidence:
+      - path: docs/api/order-api.md
+        anchor: 请求字段
+      - path: src/main/java/com/acme/order/OrderRequest.java
+    note: 接口文档的请求字段章节，或参数类本身
+
+  - id: q012
+    category: 文档查询
+    question: 为什么用 requestId 做幂等键？
+    expected_evidence:
+      - path: docs/adr/0001-order-idempotency.md
+        anchor: 决策
+      - path: src/main/java/com/acme/order/OrderService.java
+    note: ADR 的决策章节，或实现该逻辑的代码
+
+  - id: q013
+    category: 文档查询
+    question: 下单的服务端处理链路包含哪些步骤？
+    expected_evidence:
+      - path: docs/guide/getting-started.md
+        anchor: 下单流程
+      - path: src/main/java/com/acme/order/OrderService.java
+    note: 快速开始文档里的流程说明
+
+  - id: q014
+    category: 文档查询
+    question: 订单状态有哪些取值？
+    expected_evidence:
+      - path: docs/api/order-api.md
+        anchor: 响应字段
+      - path: src/main/java/com/acme/order/Order.java
+    note: 文档的响应字段表，或状态枚举定义
+
+  # ---------- 第二轮扩充：代码细节、构建配置与拒答边界 ----------
+
+  - id: q015
+    category: 事实查询
+    question: OrderService 的构造函数接收哪些依赖？
+    expected_evidence:
+      - path: src/main/java/com/acme/order/OrderService.java
+
+  - id: q016
+    category: 事实查询
+    question: OrderController 的 create 方法返回什么类型？
+    expected_evidence:
+      - path: src/main/java/com/acme/order/OrderController.java
+
+  - id: q017
+    category: 事实查询
+    question: OrderRepository 定义了哪些方法？
+    expected_evidence:
+      - path: src/main/java/com/acme/order/OrderRepository.java
+
+  - id: q018
+    category: 事实查询
+    question: RiskClient 的 allowOrder 方法有哪些参数？
+    expected_evidence:
+      - path: src/main/java/com/acme/order/RiskClient.java
+
+  - id: q019
+    category: 事实查询
+    question: OrderStatus 枚举包含哪些取值？
+    expected_evidence:
+      - path: src/main/java/com/acme/order/Order.java
+
+  - id: q020
+    category: 事实查询
+    question: 样例工程使用的是哪种构建工具？
+    expected_evidence:
+      - path: pom.xml
+      - path: README.md
+
+  - id: q021
+    category: 事实查询
+    question: 样例工程的 Maven 坐标是什么？
+    expected_evidence:
+      - path: pom.xml
+
+  - id: q022
+    category: 实现解释
+    question: 订单金额最多保留几位小数？
+    expected_evidence:
+      - path: src/main/java/com/acme/order/OrderService.java
+      - path: docs/api/order-api.md
+
+  - id: q023
+    category: 实现解释
+    question: 订单创建时参数校验失败会抛出什么异常？
+    expected_evidence:
+      - path: src/main/java/com/acme/order/OrderService.java
+
+  - id: q024
+    category: 拒答
+    question: 样例工程使用的是哪个关系型数据库？
+    expect_refusal: true
+    note: 样例只有仓储接口，没有任何数据库实现或依赖
+
+  # ---------- 生成文档通道：Javadoc 与 OpenAPI ----------
+
+  - id: q025
+    category: 文档查询
+    question: 接口文档里创建订单接口的请求体包含哪些字段？
+    expected_evidence:
+      - path: docs/generated/openapi.json
+        anchor: post-api-orders
+      - path: docs/api/order-api.md
+        anchor: 请求字段
+
+  - id: q026
+    category: 文档查询
+    question: OpenAPI 里 POST /api/orders 在哪些情况下会返回错误码？
+    expected_evidence:
+      - path: docs/generated/openapi.json
+        anchor: post-api-orders
+
+  - id: q027
+    category: 文档查询
+    question: 查询订单接口需要传什么路径参数？
+    expected_evidence:
+      - path: docs/generated/openapi.json
+        anchor: get-api-orders-orderno
+      - path: docs/api/order-api.md
+        anchor: 查询订单
+
+  - id: q028
+    category: 文档查询
+    question: Javadoc 里 createOrder 方法的说明是什么？
+    expected_evidence:
+      - path: docs/generated/javadoc/com/acme/order/OrderService.html
+
+  - id: q029
+    category: 文档查询
+    question: Javadoc 里金额校验方法的文档怎么描述金额区间？
+    expected_evidence:
+      - path: docs/generated/javadoc/com/acme/order/OrderService.html
+
+  - id: q030
+    category: 事实查询
+    question: 订单服务 API 的版本号是多少？
+    expected_evidence:
+      - path: docs/generated/openapi.json
