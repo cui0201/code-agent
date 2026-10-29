@@ -14,6 +14,7 @@ set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 JAR="$ROOT/code-agent-web/target/code-agent-web-0.1.0-SNAPSHOT.jar"
+PROJECT_ROOT="${CODE_AGENT_PROJECT_ROOT:-$ROOT/examples/demo-project}"
 
 if [ ! -f "$JAR" ]; then
   echo "未找到 $JAR，请先执行: mvn -q -pl code-agent-web -am package -DskipTests"
@@ -33,7 +34,7 @@ mkfifo "$FIFO"
 
 echo "== 启动 MCP Server（stdio）=="
 "$JAVA_BIN" -jar "$JAR" --mcp \
-  --code-agent.index.root=examples/demo-project \
+  "--code-agent.index.root=$PROJECT_ROOT" \
   < "$FIFO" > "$OUTPUT" 2> "$ERRORS" &
 SERVER_PID=$!
 
@@ -45,10 +46,12 @@ cat >&3 <<'JSON'
 {"jsonrpc":"2.0","method":"notifications/initialized"}
 {"jsonrpc":"2.0","id":2,"method":"tools/list"}
 {"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"index_status","arguments":{}}}
+{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"search_code","arguments":{"query":"createOrder 如何校验金额","topK":3}}}
+{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"get_symbol","arguments":{"symbol":"OrderService#createOrder"}}}
 JSON
 
-# 轮询等待 3 条带 id 的响应（通知没有响应）
-EXPECTED=3
+# 轮询等待 5 条带 id 的响应（通知没有响应）
+EXPECTED=5
 for _ in $(seq 1 60); do
   RECEIVED=$(grep -c '^{"jsonrpc"' "$OUTPUT" 2>/dev/null || true)
   if [ "${RECEIVED:-0}" -ge "$EXPECTED" ]; then
@@ -80,10 +83,13 @@ echo "== 断言 =="
 check '"id":1' "收到 initialize 响应"
 check '"id":2' "收到 tools/list 响应"
 check '"id":3' "收到 tools/call 响应"
+check '"id":4' "收到 search_code 响应"
+check '"id":5' "收到 get_symbol 响应"
 check '"name":"code-agent"' "初始化响应里包含服务名"
 check '"name":"search_code"' "工具列表里包含 search_code"
 check '"name":"impact_analysis"' "工具列表里包含 impact_analysis"
 check '索引状态: 切块' "index_status 返回了真实的索引状态"
+check 'OrderService.java' "检索与取符号返回了真实源码路径"
 
 # 协议通道纯净性：stdout 上只允许出现 JSON-RPC 消息
 NON_JSON=$(grep -v '^{"jsonrpc"' "$OUTPUT" | grep -c . || true)

@@ -1,6 +1,7 @@
 package com.example.codeagent.web.mcp;
 
 import com.example.codeagent.core.model.Citation;
+import com.example.codeagent.core.model.ChunkKind;
 import com.example.codeagent.core.model.ScoredChunk;
 import com.example.codeagent.core.port.Retriever;
 import com.example.codeagent.core.port.VectorStore;
@@ -155,7 +156,9 @@ public class CodeAgentMcpTools {
     /** 按符号名取源码：先用关键词索引精确定位，再返回该切块内容。 */
     private String getSymbol(Map<String, Object> arguments) {
         String symbol = stringArg(arguments, "symbol");
-        List<ScoredChunk> hits = keywordIndex.search(symbol, 5).stream()
+        // 不能只取 BM25 前 5 名再过滤：符号名中的通用词（create、order）
+        // 会把相关文档排到前面，真正的方法块可能排在截断范围之外。
+        List<ScoredChunk> hits = keywordIndex.search(symbol, keywordIndex.size()).stream()
                 .filter(hit -> matchesSymbol(hit.chunk(), symbol))
                 .toList();
         if (hits.isEmpty()) {
@@ -166,7 +169,14 @@ public class CodeAgentMcpTools {
             }
             return "符号 " + report.symbol() + " 存在于符号图中，但没有对应的切块内容。";
         }
-        ScoredChunk best = hits.get(0);
+        // get_symbol 的语义是“取源码”。生成的 Javadoc/OpenAPI 也可能命中同一符号，
+        // 因此必须在所有匹配中优先代码块，文档块只在没有源码块时兜底。
+        ScoredChunk best = hits.stream()
+                .filter(hit -> hit.chunk().kind() == ChunkKind.METHOD
+                        || hit.chunk().kind() == ChunkKind.CLASS
+                        || hit.chunk().kind() == ChunkKind.BLOCK)
+                .findFirst()
+                .orElse(hits.get(0));
         return "符号位置: " + locationOf(best.chunk()) + "\n\n```\n"
                 + truncate(best.chunk().content(), 2000) + "\n```";
     }

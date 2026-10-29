@@ -297,6 +297,26 @@ java -jar code-agent-web/target/code-agent-web-0.1.0-SNAPSHOT.jar --mcp \
 bash scripts/mcp-smoke-test.sh
 ```
 
+#### 接入 Codex
+
+先构建 JAR，再将稳定启动脚本注册为 Codex 的本地 MCP：
+
+```bash
+mvn -B -DskipTests package
+codex mcp add code_agent -- "$PWD/scripts/run-mcp.sh" "$PWD"
+codex mcp list
+```
+
+`run-mcp.sh` 不传工程目录时索引 code-agent 自身；传入其他 Maven 工程路径即可切换目标：
+
+```bash
+codex mcp add another_project -- "$PWD/scripts/run-mcp.sh" /path/to/another-project
+```
+
+注册后需要新开一个 Codex 会话，让客户端重新加载 MCP 工具。这个 MCP 只负责检索、
+取符号和影响面分析，不调用大模型，因此不需要 `LLM_API_KEY`；由 Codex 根据返回的
+源码与行号组织最终回答。
+
 > 注意：stdio 模式下 **stdout 是协议通道**，日志必须走 stderr。
 > 因为 Spring Boot 的启动横幅写在容器启动阶段，日志改道必须早于它——
 > 这个细节由 `McpStdioChannel` 保证，冒烟测试里有对应的断言。

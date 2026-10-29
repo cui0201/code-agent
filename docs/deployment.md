@@ -123,7 +123,46 @@ java -jar code-agent-web/target/code-agent-web-0.1.0-SNAPSHOT.jar \
   --code-agent.store.type=qdrant
 ```
 
-### 2.3 用 systemd 托管（Linux）
+### 2.3 接入 Codex（stdio MCP）
+
+Codex 直接启动 MCP 子进程，不需要先启动 HTTP 服务，也不需要 Qdrant 或大模型 Key。
+嵌入模型在 JAR 内运行；MCP 只返回代码、文档证据和行号，最终回答由 Codex 生成。
+
+```bash
+cd /path/to/code-agent
+export JAVA_HOME=$(/usr/libexec/java_home -v 21)   # macOS arm64
+mvn -B -DskipTests package
+
+# 注册当前项目；run-mcp.sh 会固定使用 JDK 21 和绝对路径
+codex mcp add code_agent -- "$PWD/scripts/run-mcp.sh" "$PWD"
+codex mcp list
+```
+
+给另一个 Java 工程建独立 MCP：
+
+```bash
+codex mcp add another_project -- \
+  "$PWD/scripts/run-mcp.sh" /path/to/another-project
+```
+
+注册后新开一个 Codex 会话，使工具清单刷新。可用工具：
+
+- `search_code`：混合检索源码与生成文档
+- `get_symbol`：按类/方法读取源码
+- `impact_analysis`：分析调用方、实现类与受影响文件
+- `index_status`：确认索引是否就绪
+
+验证启动器和协议：
+
+```bash
+CODE_AGENT_PROJECT_ROOT="$PWD" bash scripts/mcp-smoke-test.sh
+```
+
+首次索引当前工程需要几秒到几十秒；之后使用
+`.codeagent/index/index-snapshot.json`，通常数百毫秒即可就绪。源码内容变化会由
+内容哈希触发重新索引。
+
+### 2.4 用 systemd 托管（Linux）
 
 ```ini
 # /etc/systemd/system/code-agent.service

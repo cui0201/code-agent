@@ -68,6 +68,22 @@ class McpToolsIT {
     }
 
     @Test
+    @DisplayName("get_symbol 能按省略包名与参数列表的符号名返回源码")
+    void should_get_symbol_by_short_name() {
+        index();
+
+        McpSchema.CallToolResult result = tools.callTool("get_symbol",
+                Map.of("symbol", "OrderService#createOrder"));
+
+        assertThat(result.isError()).isFalse();
+        String text = CodeAgentMcpTools.textOf(result);
+        assertThat(text).contains("符号位置: ")
+                .contains("OrderService.java")
+                .contains("public Order createOrder(OrderRequest request)")
+                .doesNotContain("但没有对应的切块内容");
+    }
+
+    @Test
     @DisplayName("impact_analysis 给出正确的调用方与受影响文件")
     void should_analyze_impact() {
         index();
