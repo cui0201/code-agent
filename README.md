@@ -460,7 +460,7 @@ code-agent-web         Spring Boot 装配、CLI、REST
 
 ## 许可证
 
-[MIT](LICENSE)。版权声明写的是 `code-agent contributors`，你可以替换成自己的名字或组织。
+[MIT](LICENSE)。版权持有人为 **Yuhua Cui**。
 
 ## 设计上刻意的三个取舍
 
